@@ -4,10 +4,10 @@ var express       = require('express')
 ,   app           = express();
 
 
+
 app.get('/', function(req, res){
   res.send('/dirtymoney');
 });
-
 app.get('/dirtymoney', function(req, res){
   var candidatesURI = {
     host: 'api.followthemoney.org',
@@ -28,41 +28,30 @@ app.get('/dirtymoney', function(req, res){
         hawaiiCandidatesIDs.push(candidate.imsp_candidate_id);
       })
 
-      // trying to access for first candidate, #137927
-      // currently getting error 101 = restricted access
-      var contributionsURI = {
-        host: 'api.followthemoney.org',
-        path: '/candidates.contributions.php?key=44154ac0d5a8a934977a29c1cd071326&imsp_candidate_id=' + 137927
-      };
-      http.get(contributionsURI, function(res){
-        var data = '';
-        res.on('data', function(chunk){
-          data += chunk;
-        });
-        res.on('end', function(){
-          console.log("!!!!!!!!!!!!!!!!")
-          console.log(data)
-        });
-      }); // http.get
+      var hitContributionsAPI = function(candidateID){
+        var contributionsURI = {
+          host: 'api.followthemoney.org',
+          path: '/candidates.contributions.php?key=44154ac0d5a8a934977a29c1cd071326&imsp_candidate_id=' + candidateID
+        };
+        http.get(contributionsURI, function(res){
+          var data = '';
+          res.on('data', function(chunk){
+            data += chunk;
+          });
+          res.on('end', function(){
+            console.log("!!!!!!!!!!!!!!!!")
+            var contributionData = parser.toJson(data, {object: true});
+            console.log(contributionData);
+          });
+        }); // http.get
+      }
 
+      var throttledhitContributionsAPI = _.throttle(hitContributionsAPI, 100);
 
-      // trying to access for all 200 candidates
-      // _.each(hawaiiCandidatesIDs, function(candidateID){
-      //   var contributionsURI = {
-      //     host: 'api.followthemoney.org',
-      //     path: '/candidates.contributions.php?key=44154ac0d5a8a934977a29c1cd071326&imsp_candidate_id=' + candidateID
-      //   };
-      //   http.get(contributionsURI, function(res){
-      //     var data = '';
-      //     res.on('data', function(chunk){
-      //       data += chunk;
-      //     });
-      //     res.on('end', function(){
-      //       console.log("!!!!!!!!!!!!!!!!")
-      //       console.log(data);
-      //     });
-      //   }); // http.get
-      // }); // each
+      //trying to access for all 200 candidates
+      _.each(hawaiiCandidatesIDs, function(candidateID){
+        hitContributionsAPI(candidateID)
+      }); // each
 
 
 
